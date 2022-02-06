@@ -267,9 +267,9 @@ class Detector(BaseModel):
 
     def __init__(self, config):
         super().__init__(config)
-        self.scoreMap = nn.Conv2d(32, 1, kernel_size=1)
-        self.geoMap = nn.Conv2d(32, 4, kernel_size=1)
-        self.angleMap = nn.Conv2d(32, 1, kernel_size=1)
+        self.scoreMap = nn.Conv2d(32, 1, kernel_size=1) # 글자일지 아닐지에 대한 score
+        self.geoMap = nn.Conv2d(32, 4, kernel_size=1) # box의 상하좌우해서 네개
+        self.angleMap = nn.Conv2d(32, 1, kernel_size=1) # 각도에 대한 map
         self.size = config.data_loader.size
 
     def forward(self, *input):
@@ -279,9 +279,10 @@ class Detector(BaseModel):
         score = torch.sigmoid(score)
 
         geoMap = self.geoMap(final)
-        # 出来的是 normalise 到 0 -1 的值是到上下左右的距离，但是图像他都缩放到  640 * 640 了，但是 gt 里是算的绝对数值来的
+        # normalise에서 0 - 1까지의 값은 상하좌우 거리입니다，하지만 그림은 640*640으로 줄였지만 gt에서는 절대값을 계산합니다. => 이미지 전체에서 상하좌우 상대 거리를 의미하는듯
         geoMap = torch.sigmoid(geoMap) * self.size  # TODO: 640 is the image size
 
+        #-pi/2~pi/2범위로 이동
         angleMap = self.angleMap(final)
         angleMap = (torch.sigmoid(angleMap) - 0.5) * math.pi
 
