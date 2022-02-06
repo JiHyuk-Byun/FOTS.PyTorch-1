@@ -9,6 +9,7 @@ import torch.optim as optim
 from torch.optim.lr_scheduler import StepLR
 from pytorch_lightning.core import LightningModule
 
+from .modules.crnn import ViTSTR
 from ..base import BaseModel
 from .modules import shared_conv
 from .modules.roi_rotate import ROIRotate
@@ -257,10 +258,12 @@ class Recognizer(BaseModel):
 
     def __init__(self, nclass, config):
         super().__init__(config)
-        self.crnn = CRNN(8, 32, nclass, 256)
+        self.vitstr = ViTSTR.create_vitstr(num_tokens=nclass, model=config.TransformerModel)
 
-    def forward(self, rois, lengths):
-        return self.crnn(rois, lengths)
+
+    def forward(self, input, rois, lengths):
+        prediction = self.vitstr(input, seqlen=lengths)
+        return prediction
 
 
 class Detector(BaseModel):
